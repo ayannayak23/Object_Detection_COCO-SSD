@@ -3,13 +3,25 @@ const liveView = document.getElementById('liveView');
 const demosSection = document.getElementById('demos');
 const enableWebcamButton = document.getElementById('webcamButton');
 const stopButton = document.getElementById('stopWebcam');
-const imageInput = document.getElementById('imageInput');
-const imageCanvas = document.getElementById('imageCanvas');
-const ctx = imageCanvas.getContext('2d');
+const filterList = document.getElementById('filterList');
+const confidenceSlider = document.getElementById('confidenceSlider');
+const confidenceValue = document.getElementById('confidenceValue');
+const fpsValue = document.getElementById('fpsValue');
+const timeValue = document.getElementById('timeValue');
+
+let activeClasses = new Set();
+let createdClasses = new Set();
 
 
 let webcamRunning = false;
 let animationFrameId = null;
+
+let confidenceThreshold = 0.66;
+
+let lastFrameTime = performance.now();
+let frameCount = 0;
+let fps = 0;
+
 
 // Store the resulting model in the global scope of our app.
 var model = undefined;
@@ -20,7 +32,7 @@ function getUserMediaSupported() {
     return !! (navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
 }
 
-function enableCam(event) {
+function enableCam() {
     // Only continue if the model has finished loading.
     if (!model) {
         return;
@@ -36,13 +48,15 @@ function enableCam(event) {
 
         enableWebcamButton.disabled = true;
         stopButton.disabled = false;
+        document.getElementById('noCamMessage').classList.add('invisible');
+        document.getElementById('classFilters').classList.remove('invisible');
+        document.getElementById('confidenceControl').classList.remove('invisible');
         video.addEventListener('loadeddata', predictWebcam);
     })
     .catch(function(err) {
-        alert(
-        "Webcam access was denied.\n" +
-        "Please allow camera permissions and reload the page."
-        );
+        document.getElementById('noCamMessage').classList.remove('invisible');
+        liveView.classList.add('invisible');
+
     });
 
 }
@@ -69,7 +83,13 @@ function stopWebcam() {
 
     webcamRunning = false;
     liveView.classList.add('invisible');
+    document.getElementById('classFilters').classList.add('invisible');
+    document.getElementById('confidenceControl').classList.add('invisible');
 
+    // Clear filters
+    filterList.innerHTML = '';
+    activeClasses.clear();
+    createdClasses.clear();
 
     enableWebcamButton.disabled = false;
     stopButton.disabled = true;
@@ -123,58 +143,47 @@ cocoSsd.load().then(function(loadedModel) {
     demosSection.classList.remove('dimmed');
 });
 
-// Function to draw predictions on a single image canvas
-function drawImagePredictions(predictions) {
+confidenceSlider.addEventListener('input', () => {
+    confidenceThreshold = confidenceSlider.value / 100;
+    confidenceValue.textContent = confidenceSlider.value + '%';
+});
+
+
+// Update class filters based on predictions
+function updateClassFilters(predictions) {
+
+    if (createdClasses.size === 0 && predictions.length > 0) {
+        filterList.innerHTML = '';
+    }
+
     predictions.forEach(pred => {
-        if (pred.score > 0.66) {
-            const [x, y, width, height] = pred.bbox;
+        if (!createdClasses.has(pred.class)) {
+            createdClasses.add(pred.class);
+            activeClasses.add(pred.class);
 
-            // Bounding box
-            ctx.strokeStyle = 'red';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(x, y, width, height);
+            const label = document.createElement('label');
+            const checkbox = document.createElement('input');
 
-            // Label
-            ctx.fillStyle = 'red';
-            ctx.font = '16px Arial';
-            ctx.fillText(
-                `${pred.class} (${Math.round(pred.score * 100)}%)`,
-                x,
-                y > 10 ? y - 5 : 10
-            );
+            checkbox.type = 'checkbox';
+            checkbox.checked = true;
+            checkbox.value = pred.class;
+
+            checkbox.addEventListener('change', () => {
+                if (checkbox.checked) {
+                    activeClasses.add(pred.class);
+                } else {
+                    activeClasses.delete(pred.class);
+                }
+            });
+
+            label.appendChild(checkbox);
+            label.appendChild(document.createTextNode(' ' + pred.class));
+
+            filterList.appendChild(label);
+            filterList.appendChild(document.createElement('br'));
         }
     });
 }
-
-// Draw the predictions on the image canvas
-imageInput.addEventListener('change', () => {
-    if (!model) return;
-
-    const file = imageInput.files[0];
-    if (!file) return;
-
-    imageCanvas.classList.remove('invisible');
-
-
-    const img = new Image();
-    img.src = URL.createObjectURL(file);
-
-    img.onload = () => {
-        // Resize canvas to image
-        imageCanvas.width = img.width;
-        imageCanvas.height = img.height;
-
-        // Draw image
-        ctx.drawImage(img, 0, 0);
-
-        // Run detection with tensor cleanup
-        tf.tidy(() => {
-            model.detect(img).then(predictions => {
-                drawImagePredictions(predictions);
-            });
-        });
-    };
-});
 
 
 var boundingBoxes = [];
@@ -182,9 +191,15 @@ var boundingBoxes = [];
 // Prediction loop
 function predictWebcam() {
     if (!webcamRunning) return;
+
+    const startTime = performance.now();
+
     // Now let's start classifying a frame in the stream.
     model.detect(video).then(function(predictions) {
         tf.tidy(() => {
+            updateClassFilters(predictions);
+            const endTime = performance.now();
+            timeValue.textContent = (endTime - startTime).toFixed(1);
             // Remove any highlighting we did previous frame.
             for (let i = 0; i < boundingBoxes.length; i++) {
                 liveView.removeChild(boundingBoxes[i]);
@@ -194,7 +209,7 @@ function predictWebcam() {
             // they have a high confidence score.
             for (let n = 0; n < predictions.length; n++) {
                 // If we are over 50% sure we are sure we classified it right, draw it!
-                if (predictions[n].score > 0.50) {
+                if (predictions[n].score >= confidenceThreshold && activeClasses.has(predictions[n].class)) {
                     const p = document.createElement('p');
                     p.innerText = predictions[n].class + ' - with ' +
                         Math.round(parseFloat(predictions[n].score) * 100) +
@@ -217,6 +232,17 @@ function predictWebcam() {
                     boundingBoxes.push(p);
                 }
             }
+            
+            frameCount++;
+            const now = performance.now();
+
+            if (now - lastFrameTime >= 1000) {
+                fps = frameCount;
+                frameCount = 0;
+                lastFrameTime = now;
+                fpsValue.textContent = fps;
+            }
+
         });
         // Call this function again to keep predicting when the browser is ready.
         animationFrameId = window.requestAnimationFrame(predictWebcam);

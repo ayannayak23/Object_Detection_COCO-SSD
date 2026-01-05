@@ -20,16 +20,49 @@
             <canvas id="imageCanvas" class="invisible"></canvas>
         </div>
 
-
+        <div id="noCamMessage" class="invisible">
+            <div>
+                <p>Webcam access was denied.</p>
+                <p>Please allow camera permissions and reload the page.</p>
+            </div>
+        </div>
 
         <div id="liveView" class="camView invisible">
             <video id="webcam" autoplay muted width="640" height="480"></video>
+            <div id="performancePanel">
+                <h3>Performance</h3>
+                <p>FPS: <span id="fpsValue">0</span></p>
+                <p>Inference time: <span id="timeValue">0</span> ms</p>
+            </div>
         </div>
     </section>
 
     <div id="loading">
         <div class="spinner"></div>
         <p>Loading object detection model… Please wait.</p>
+    </div>
+
+    <div id="filters">
+        
+        <div id="confidenceControl" class="invisible">
+            <h3>Confidence Threshold</h3>
+            <input
+                type="range"
+                id="confidenceSlider"
+                min="0"
+                max="100"
+                value="66"
+            >
+            <span id="confidenceValue">66%</span>
+        </div>
+
+        <div id="classFilters" class="invisible">
+            <h3>Filter detected classes</h3>
+            <div id="filterList">
+                <p>No detections yet</p>
+            </div>
+        </div>
+
     </div>
 
     <div id="modelInfo" class="panel invisible">
@@ -48,5 +81,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
     <!-- Load our custom script after libraries are available -->
     <script src="script.js" defer></script>
+    <script src="drawImagePrdictions.js" defer></script>
+    <script src="filterOptions.js" defer></script>
 </body>
 </html>
