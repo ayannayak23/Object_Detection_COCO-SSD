@@ -34,12 +34,12 @@ imageInput.addEventListener('change', () => {
                     console.log(`Drawing ${pred.class} at [${x}, ${y}, ${width}, ${height}]`);
 
                     // Bounding box
-                    context.strokeStyle = 'green';
+                    context.strokeStyle = 'red';
                     context.lineWidth = 2;
                     context.strokeRect(x, y, width, height);
 
                     // Label
-                    context.fillStyle = 'green';
+                    context.fillStyle = 'red';
                     context.font = '25px Arial';
                     context.fontWeight = 'bold';
                     context.fillText(

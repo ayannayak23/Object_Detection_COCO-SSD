@@ -3,76 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>COCO-SSD Object Detection</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1> Multiple object detection using COCO-SSD in TensorFlow.js </h1>
-    <p> wait for the model to load before clicking the button to enable the webcam at which point it will become visible to use.</p>
-
-    <section id="demos" class="dimmed">
-        <p> Hold some objects up close to your webcam to get a real-time classification! When ready click "enable webcam" below and accept access to the webcam when the browser asks (check the top left of your window) </p>
-        <button id="webcamButton"> Enable Webcam </button>
-        <button id="stopWebcam" disabled>Stop Webcam</button>
-
-        <div id="imageUpload">
-            <input type="file" id="imageInput" accept="image/*">
-            <canvas id="imageCanvas" class="invisible"></canvas>
-        </div>
-
-        <div id="noCamMessage" class="invisible">
-            <div>
-                <p>Webcam access was denied.</p>
-                <p>Please allow camera permissions and reload the page.</p>
-            </div>
-        </div>
-
-        <div id="liveView" class="camView invisible">
-            <video id="webcam" autoplay muted width="640" height="480"></video>
-            <div id="performancePanel">
-                <h3>Performance</h3>
-                <p>FPS: <span id="fpsValue">0</span></p>
-                <p>Inference time: <span id="timeValue">0</span> ms</p>
-            </div>
-        </div>
-    </section>
-
+    <h1>Multiple Object Detection using COCO-SSD in TensorFlow.js</h1>
+    <p>Wait for the model to load before clicking the button to enable the webcam. The webcam will become visible once enabled.</p>
+    
     <div id="loading">
         <div class="spinner"></div>
         <p>Loading object detection model… Please wait.</p>
     </div>
-
-    <div id="filters">
+    
+    <section id="demos" class="dimmed">
+        <p>Hold objects up close to your webcam for real-time classification! Click "Enable Webcam" below and allow camera access when prompted.</p>
         
-        <div id="confidenceControl" class="invisible">
-            <h3>Confidence Threshold</h3>
-            <input
-                type="range"
-                id="confidenceSlider"
-                min="0"
-                max="100"
-                value="66"
-            >
-            <span id="confidenceValue">66%</span>
-        </div>
+        <div class="main-container">
+            <!-- Left Panel: Controls -->
+            <div class="control-panel">
+                <div class="control-group">
+                    <h3>Camera Controls</h3>
+                    <button id="webcamButton" class="btn btn-primary">Enable Webcam</button>
+                    <button id="stopWebcam" class="btn btn-secondary" disabled>Stop Webcam</button>
+                </div>
+                
+                <div class="control-group">
+                    <h3>Upload Image</h3>
+                    <p id="uploadInfo">Upload an image for detection:</p>
+                    <div id="imageUpload">
+                        <input type="file" id="imageInput" accept="image/*" class="file-input">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Middle Panel: Camera/Image View -->
+            <div class="view-panel">
+                <div id="liveView" class="camView invisible">
+                    <video id="webcam" autoplay muted width="640" height="480"></video>
+                    <div id="performancePanel">
+                        <h3>Performance</h3>
+                        <p>FPS: <span id="fpsValue">0</span></p>
+                        <p>Inference time: <span id="timeValue">0</span> ms</p>
+                    </div>
+                </div>
+                <canvas id="imageCanvas" class="invisible"></canvas>
+            </div>
 
-        <div id="classFilters" class="invisible">
-            <h3>Filter detected classes</h3>
-            <div id="filterList">
-                <p>No detections yet</p>
+            <div id="noCamMessage" class="invisible">
+                <div class="warning-message">
+                    <span class="warning-icon">⚠</span>
+                    <div>
+                        <p>Webcam access was denied.</p>
+                        <p>Please allow camera permissions and reload the page.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Panel: Settings -->
+            <div class="settings-panel">
+                <div class="control-group">
+                    <h3>Backend Settings</h3>
+                    <select id="backend" class="backend-select">
+                        <option value="webgl">WebGL</option>
+                        <option value="cpu">CPU</option>
+                    </select>
+                    <p id="status"></p>
+                </div>
+                
+                <div id="confidenceControl" class="control-group invisible">
+                    <h3>Confidence Threshold</h3>
+                    <input type="range" id="confidenceSlider" min="0" max="100" value="66">
+                    <div class="slider-value">
+                        <span id="confidenceValue">66%</span>
+                    </div>
+                </div>
+                
+                <div id="classFilters" class="control-group invisible">
+                    <h3>Filter Detected Classes</h3>
+                    <div id="filterList">
+                        <p class="no-filters">No detections yet</p>
+                    </div>
+                </div>
             </div>
         </div>
+    </section>
 
-    </div>
-
+    <!-- Model Info at the bottom -->
     <div id="modelInfo" class="panel invisible">
-    <h3>Model Information</h3>
-    <ul>
-        <li><strong>Name:</strong> COCO-SSD (MobileNet v2)</li>
-        <li><strong>Framework:</strong> TensorFlow.js (v4.22.0)</li>
-        <li><strong>Model Size:</strong> ~268 KB (unpacked)</li>
-        <li><strong>Purpose:</strong> Real-time object detection</li>
-    </ul>
+        <h3>Model Information</h3>
+        <ul>
+            <li><strong>Name:</strong> COCO-SSD (MobileNet v2)</li>
+            <li><strong>Framework:</strong> TensorFlow.js (v4.22.0)</li>
+            <li><strong>Model Size:</strong> ~268 KB (unpacked)</li>
+            <li><strong>Purpose:</strong> Real-time object detection</li>
+        </ul>
     </div>
 
     <!-- Import TensorFlow.js library -->
@@ -82,6 +106,6 @@
     <!-- Load our custom script after libraries are available -->
     <script src="script.js" defer></script>
     <script src="drawImagePrdictions.js" defer></script>
-    <script src="filterOptions.js" defer></script>
+    <script src="backendOptions.js" defer></script>
 </body>
 </html>

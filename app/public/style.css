@@ -11,6 +11,9 @@ h1 {
 
 video {
     display: block;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    background: #000;
 }
 
 section {
@@ -27,14 +30,20 @@ section {
 }
 
 #loading {
-    padding: 12px;
+    padding: 20px;
     background-color: rgb(245, 66, 176);
     color: #fff;
     text-align: center;
     font-weight: bold;
-    display: block;
-    max-width: fit-content;
-    margin: auto;
+    border-radius: 8px;
+    max-width: 400px;
+    margin: 20px auto;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 40%;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    z-index: 10;
 }
 
 .invisible {
@@ -42,13 +51,13 @@ section {
 }
 
 .spinner {
-    width: 30px;
-    height: 30px;
-    border: 4px solid #ccc;
-    border-top: 4px solid #333;
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top: 4px solid #fff;
     border-radius: 50%;
     animation: spin 1s linear infinite;
-    margin: 0 auto 10px;
+    margin: 0 auto 15px;
 }
 
 @keyframes spin {
@@ -56,19 +65,104 @@ section {
     100% { transform: rotate(360deg); }
 }
 
-#imageUpload {
-    margin-top: 20px;
+/* Main container for three-column layout */
+.main-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin: 30px 0;
+    align-items: flex-start;
 }
 
-#imageCanvas {
-    max-width: 500px;
-    max-height: 500px;
-    border: 1px solid #ccc;
-    margin-top: 10px;
-    display: block;
+/* Control panels styling */
+.control-panel, .settings-panel {
+    flex: 1;
+    min-width: 250px;
+    max-width: 320px;
 }
 
-#noCamMessage {
+.view-panel {
+    flex: 2.5;
+    min-width: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Control groups */
+.control-group {
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.control-group h3 {
+    margin-top: 0;
+    color: black;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+/* Button styling */
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin: 5px;
+    width: 100%;
+    display: inline-block;
+}
+
+.btn-primary {
+    background-color: rgb(245, 66, 176);
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-color: rgb(220, 50, 150);
+    transform: translateY(-2px);
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background-color: #5a6268;
+    transform: translateY(-2px);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* File input styling */
+.file-input {
+    padding: 10px;
+    border: 2px dashed #ccc;
+    border-radius: 6px;
+    width: 90%;
+    cursor: pointer;
+    background: white;
+}
+
+.file-input:hover {
+    border-color: rgb(245, 66, 176);
+}
+
+/* Warning message */
+.warning-message {
     color: red;
     font-weight: bold;
     margin-top: 20px;
@@ -79,101 +173,255 @@ section {
     width: fit-content;
 }
 
-#noCamMessage::before {
-    content: "⚠";
+.warning-icon {
+    font-size: 50px;
     color: red;
-    font-size: 36px;
 }
 
-#noCamMessage p {
-    margin: 5px 0;
+/* Canvas styling */
+#imageCanvas {
+    max-width: 100%;
+    max-height: 480px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    display: block;
+    background: white;
 }
 
+/* Camera view */
 .camView {
     position: relative;
-    width: calc(100% - 20px);
-    margin: 10px;
-    cursor: pointer;
+    width: 100%;
+    max-width: 640px;
 }
+
 .camView p {
     position: absolute;
-    padding: 5px;
-    background-color: rgba(245, 66, 176, 0.85);
+    padding: 5px 8px;
+    background-color: rgba(245, 66, 176, 0.9);
     color: #FFF;
-    border: 1px dashed rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: 4px;
     z-index: 2;
     font-size: 12px;
+    font-weight: bold;
+    pointer-events: none;
 }
 
 .highlighter {
     background: rgba(0, 255, 0, 0.25);
-    border: 1px dashed #fff;
+    border: 2px dashed #00ff00;
+    border-radius: 4px;
     z-index: 1;
     position: absolute;
 }
 
+/* Performance panel */
 #performancePanel {
     position: absolute;
     bottom: 10px;
     left: 10px;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.7);
     color: #fff;
-    padding: 10px;
-    border-radius: 5px;
+    padding: 12px;
+    border-radius: 6px;
     font-size: 14px;
     z-index: 3;
+    backdrop-filter: blur(4px);
 }
 
 #performancePanel h3 {
-    margin: 5px 0 15px 0;
+    margin: 0 0 10px 0;
     font-size: 16px;
+    color: white;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
 }
 
-#performancePanel p{
+#performancePanel p {
     position: relative;
-    margin: 5px 0;
+    margin: 8px 0;
+    background: transparent;
+    border: none;
+    padding: 0;
 }
 
-#filters{
-    margin-top: 20px;
-    margin-bottom: 20px;
-    display: block;
+#status {
+    font-weight: bold;
+    color: orangered;
 }
 
-#filterList {
-    max-width: fit-content;
-    border: 1px solid #ccc;
-    padding: 10px;
-    background-color: #f5f5f5;
-}
-
-#classFilters {
-    margin-top: 20px;
-    margin-bottom: 20px;
-    max-width: 400px;
-    padding: 0px 10px 10px 10px;
-    border: 1px solid #ccc;
-    background-color: #f5f5f5;
-}
-
-#confidenceControl {
-    margin-top: 20px;
-    margin-bottom: 20px;
-    padding: 0px 10px 10px 10px;
-    max-width: 400px;
-    border: 1px solid #ccc;
-    background-color: #f5f5f5;
-}
-
+/* Slider styling */
 #confidenceSlider {
-    margin-top: 10px;
-    width: 75%;
+    width: 100%;
+    height: 8px;
+    border-radius: 4px;
+    background: #ddd;
+    outline: none;
 }
 
-.panel {
-    border: 1px solid #ccc;
-    padding: 12px;
+.slider-value {
+    text-align: center;
+    margin-top: 10px;
+    font-weight: bold;
+    color: #0063B1;
+}
+
+/* Filter list */
+#filterList {
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 10px;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+}
+
+.no-filters {
+    color: #666;
+    font-style: italic;
+    text-align: center;
     margin: 10px 0;
-    background-color: #f9f9f9;
-    max-width: 400px;
+}
+
+.filter-checkbox {
+    display: flex;
+    align-items: center;
+    margin: 8px 0;
+    padding: 5px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.filter-checkbox:hover {
+    background-color: #f0f0f0;
+}
+
+.filter-checkbox input[type="checkbox"] {
+    margin-right: 10px;
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.filter-checkbox label {
+    cursor: pointer;
+    flex-grow: 1;
+    user-select: none;
+}
+
+/* Backend select */
+.backend-select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: white;
+    font-size: 16px;
+    margin-top: 5px;
+    cursor: pointer;
+}
+
+.backend-select:focus {
+    outline: none;
+    border-color: rgb(245, 66, 176);
+}
+
+/* Model info panel at bottom */
+.panel {
+    border: 1px solid #e0e0e0;
+    padding: 24px;
+    margin: 40px 0 20px 0;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    max-width: 90%;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.panel h3 {
+    margin-top: 0;
+    color: black;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 10px;
+    font: bold 20px Arial, sans-serif;
+}
+
+.panel ul {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+.panel li {
+    padding: 8px 0;
+}
+
+.panel li:last-child {
+    border-bottom: none;
+}
+
+/* Responsive design */
+@media (max-width: 1237px) {
+    .main-container {
+        flex-direction: column;
+    }
+    
+    .control-panel, .settings-panel, .view-panel {
+        max-width: 90%;
+    }
+
+    .control-panel {
+        display: flex;
+        gap: 20px;
+    }
+
+    .settings-panel {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    .settings-panel .control-group:nth-child(3) {
+        grid-column: 1 / -1;
+    }
+    
+    video, #imageCanvas {
+        max-width: 100%;
+        height: auto;
+    }
+
+    #loading {
+        max-width: 200px;
+        top: 50%;
+    }
+
+    #classFilters{
+        display: block;
+    }
+}
+
+@media (max-width: 642px) {
+    body {
+        margin: 1em;
+    }
+    
+    .btn {
+        width: 100%;
+        margin: 5px 0;
+        font-size: 14px;
+    }
+    
+    .control-group {
+        padding: 16px;
+    }
+
+    .control-group h3 {
+        font-size: 15px;
+    }
+
+    .control-panel, .view-panel {
+        max-width: 100%;
+    }
+
+    .settings-panel {
+        min-width: 100%;
+    }
 }

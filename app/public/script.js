@@ -22,6 +22,10 @@ let lastFrameTime = performance.now();
 let frameCount = 0;
 let fps = 0;
 
+let lastInferenceTime = 0;
+const CPU_INFERENCE_INTERVAL = 10000;
+
+
 
 // Store the resulting model in the global scope of our app.
 var model = undefined;
@@ -51,12 +55,14 @@ function enableCam() {
         document.getElementById('noCamMessage').classList.add('invisible');
         document.getElementById('classFilters').classList.remove('invisible');
         document.getElementById('confidenceControl').classList.remove('invisible');
+        document.querySelector('.view-panel').classList.remove('invisible');
+        document.getElementById('imageCanvas').classList.add('invisible');
         video.addEventListener('loadeddata', predictWebcam);
     })
     .catch(function(err) {
         document.getElementById('noCamMessage').classList.remove('invisible');
         liveView.classList.add('invisible');
-
+        document.querySelector('.view-panel').classList.add('invisible');
     });
 
 }
@@ -189,8 +195,19 @@ function updateClassFilters(predictions) {
 var boundingBoxes = [];
 
 // Prediction loop
-function predictWebcam() {
+function predictWebcam(timestamp) {
     if (!webcamRunning) return;
+
+    const backend = tf.getBackend();
+
+    // Throttle inference on CPU
+    if (backend === 'cpu') {
+        if (timestamp - lastInferenceTime < CPU_INFERENCE_INTERVAL) {
+            animationFrameId = requestAnimationFrame(predictWebcam);
+            return;
+        }
+        lastInferenceTime = timestamp;
+    }
 
     const startTime = performance.now();
 
@@ -200,6 +217,13 @@ function predictWebcam() {
             updateClassFilters(predictions);
             const endTime = performance.now();
             timeValue.textContent = (endTime - startTime).toFixed(1);
+            
+            // Calculate scaling factor for responsive design
+            const videoWidth = video.offsetWidth;
+            const videoHeight = video.offsetHeight;
+            const scaleX = videoWidth / video.videoWidth;
+            const scaleY = videoHeight / video.videoHeight;
+            
             // Remove any highlighting we did previous frame.
             for (let i = 0; i < boundingBoxes.length; i++) {
                 liveView.removeChild(boundingBoxes[i]);
@@ -214,16 +238,16 @@ function predictWebcam() {
                     p.innerText = predictions[n].class + ' - with ' +
                         Math.round(parseFloat(predictions[n].score) * 100) +
                         '% confidence.';
-                    p.style = 'margin-left: ' + predictions[n].bbox[0] + 'px; margin-top: ' +
-                        (predictions[n].bbox[1] - 10) + 'px; width: ' +
-                        (predictions[n].bbox[2] - 10) + 'px; top: 0; left: 0;';
+                    p.style = 'margin-left: ' + (predictions[n].bbox[0] * scaleX) + 'px; margin-top: ' +
+                        (predictions[n].bbox[1] * scaleY - 10) + 'px; width: ' +
+                        (predictions[n].bbox[2] * scaleX - 10) + 'px; top: 0; left: 0;';
                     const highlighter = document.createElement('div');
                     highlighter.setAttribute('class', 'highlighter');
 
-                    highlighter.style = 'left: ' + predictions[n].bbox[0] + 'px; top: ' +
-                        predictions[n].bbox[1] + 'px; width: ' +
-                        predictions[n].bbox[2] + 'px; height: ' +
-                        predictions[n].bbox[3] + 'px;';
+                    highlighter.style = 'left: ' + (predictions[n].bbox[0] * scaleX) + 'px; top: ' +
+                        (predictions[n].bbox[1] * scaleY) + 'px; width: ' +
+                        (predictions[n].bbox[2] * scaleX) + 'px; height: ' +
+                        (predictions[n].bbox[3] * scaleY) + 'px;';
 
                     liveView.appendChild(highlighter);
                     liveView.appendChild(p);
@@ -232,7 +256,7 @@ function predictWebcam() {
                     boundingBoxes.push(p);
                 }
             }
-            
+
             frameCount++;
             const now = performance.now();
 
