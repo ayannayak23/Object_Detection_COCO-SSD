@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>COCO-SSD Object Detection</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://kit.fontawesome.com/cd1f0829a6.js" crossorigin="anonymous"></script>
 </head>
 <body>
     <h1>Multiple Object Detection using COCO-SSD in TensorFlow.js</h1>
@@ -34,6 +35,8 @@
                         <input type="file" id="imageInput" accept="image/*" class="file-input">
                     </div>
                 </div>
+
+                <button id="screenshotBtn" class="btn btn-secondary" disabled><i class="fa-regular fa-camera" style="color: #ffffff;"></i> Take Screenshot</button>
             </div>
             
             <!-- Middle Panel: Camera/Image View -->
@@ -107,5 +110,6 @@
     <script src="script.js" defer></script>
     <script src="drawImagePrdictions.js" defer></script>
     <script src="backendOptions.js" defer></script>
+    <script src="screenshot.js" defer></script>
 </body>
 </html>

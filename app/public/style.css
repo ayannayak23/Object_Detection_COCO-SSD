@@ -161,6 +161,11 @@ section {
     border-color: rgb(245, 66, 176);
 }
 
+#screenshotBtn {
+    margin-top: 3px;
+    padding: 10px;
+}
+
 /* Warning message */
 .warning-message {
     color: red;
@@ -276,6 +281,13 @@ section {
     border-radius: 4px;
 }
 
+#filterList label{
+    align-items: center;
+    margin-bottom: -14px;
+    cursor: pointer;
+    display: flex;
+}
+
 .no-filters {
     color: #666;
     font-style: italic;
@@ -284,12 +296,11 @@ section {
 }
 
 .filter-checkbox {
-    display: flex;
     align-items: center;
-    margin: 8px 0;
-    padding: 5px;
-    border-radius: 4px;
-    transition: background-color 0.2s;
+    padding: 6px 8px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    margin-left: auto;
 }
 
 .filter-checkbox:hover {
@@ -369,8 +380,18 @@ section {
     }
 
     .control-panel {
-        display: flex;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
         gap: 20px;
+    }
+    .control-group {
+        margin-bottom: 0px;
+    }
+
+    #screenshotBtn {
+        grid-column: 1 / -1;
+        width: 50%;
+        margin: 0 auto;
     }
 
     .settings-panel {
@@ -406,7 +427,7 @@ section {
     .btn {
         width: 100%;
         margin: 5px 0;
-        font-size: 14px;
+        font-size: 12.9px;
     }
     
     .control-group {

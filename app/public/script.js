@@ -8,10 +8,11 @@ const confidenceSlider = document.getElementById('confidenceSlider');
 const confidenceValue = document.getElementById('confidenceValue');
 const fpsValue = document.getElementById('fpsValue');
 const timeValue = document.getElementById('timeValue');
+const screenshotBtn = document.getElementById('screenshotBtn');
 
 let activeClasses = new Set();
 let createdClasses = new Set();
-
+let classCounts = {};
 
 let webcamRunning = false;
 let animationFrameId = null;
@@ -25,6 +26,24 @@ let fps = 0;
 let lastInferenceTime = 0;
 const CPU_INFERENCE_INTERVAL = 10000;
 
+const confidenceHistory = {};
+const CONF_HISTORY_SIZE = 20;
+
+const classColors = {};
+const colorPalette = [
+    'rgb(245, 66, 176)', '#e6194b', '#f58231', '#4363d8',
+    '#ffe119', '#911eb4', '#46f0f0', '#3cb44b',
+    '#bcf60c', '#fabebe', '#008080', '#e6beff'
+];
+let colorIndex = 0;
+
+function getColorForClass(className) {
+    if (!classColors[className]) {
+        classColors[className] = colorPalette[colorIndex % colorPalette.length];
+        colorIndex++;
+    }
+    return classColors[className];
+}
 
 
 // Store the resulting model in the global scope of our app.
@@ -57,6 +76,7 @@ function enableCam() {
         document.getElementById('confidenceControl').classList.remove('invisible');
         document.querySelector('.view-panel').classList.remove('invisible');
         document.getElementById('imageCanvas').classList.add('invisible');
+        screenshotBtn.disabled = false;
         video.addEventListener('loadeddata', predictWebcam);
     })
     .catch(function(err) {
@@ -91,6 +111,7 @@ function stopWebcam() {
     liveView.classList.add('invisible');
     document.getElementById('classFilters').classList.add('invisible');
     document.getElementById('confidenceControl').classList.add('invisible');
+    screenshotBtn.disabled = true;
 
     // Clear filters
     filterList.innerHTML = '';
@@ -168,11 +189,24 @@ function updateClassFilters(predictions) {
             activeClasses.add(pred.class);
 
             const label = document.createElement('label');
+            label.dataset.className = pred.class;
             const checkbox = document.createElement('input');
+
+            const swatch = document.createElement('span');
+            swatch.style.width = '12px';
+            swatch.style.height = '12px';
+            swatch.style.backgroundColor = classColors[pred.class] || getColorForClass(pred.class);
+            swatch.style.display = 'inline-block';
+            swatch.style.marginRight = '6px';
+
+            const countSpan = document.createElement('span');
+            countSpan.className = 'classCount';
+            countSpan.textContent = ' (0)';
 
             checkbox.type = 'checkbox';
             checkbox.checked = true;
             checkbox.value = pred.class;
+            checkbox.classList.add('filter-checkbox');
 
             checkbox.addEventListener('change', () => {
                 if (checkbox.checked) {
@@ -182,14 +216,40 @@ function updateClassFilters(predictions) {
                 }
             });
 
-            label.appendChild(checkbox);
             label.appendChild(document.createTextNode(' ' + pred.class));
+            label.insertBefore(swatch, label.firstChild);
+            label.appendChild(countSpan);
+            label.appendChild(checkbox);
+
 
             filterList.appendChild(label);
             filterList.appendChild(document.createElement('br'));
         }
     });
 }
+
+
+// Update class counts in the filter list
+function updateClassCountsUI() {
+    const labels = filterList.querySelectorAll('label');
+
+    labels.forEach(label => {
+        const cls = label.dataset.className;
+        const countSpan = label.querySelector('.classCount');
+        const count = classCounts[cls] || 0;
+        countSpan.textContent = ` (${count})`;
+    });
+}
+
+// Calculate average confidence for a class
+function getAverageConfidence(cls) {
+    const history = confidenceHistory[cls];
+    if (!history || history.length === 0) return null;
+
+    const sum = history.reduce((a, b) => a + b, 0);
+    return sum / history.length;
+}
+
 
 
 var boundingBoxes = [];
@@ -229,18 +289,39 @@ function predictWebcam(timestamp) {
                 liveView.removeChild(boundingBoxes[i]);
             }
             boundingBoxes.splice(0);
+            classCounts = {};
             // Now lets loop through predictions and draw them to the live view if
             // they have a high confidence score.
             for (let n = 0; n < predictions.length; n++) {
-                // If we are over 50% sure we are sure we classified it right, draw it!
-                if (predictions[n].score >= confidenceThreshold && activeClasses.has(predictions[n].class)) {
+                // If we are over 66% sure we are sure we classified it right, draw it!
+                const cls = predictions[n].class;
+                const score = predictions[n].score;
+
+                if (!confidenceHistory[cls]) {
+                    confidenceHistory[cls] = [];
+                }
+
+                confidenceHistory[cls].push(score);
+
+                if (confidenceHistory[cls].length > CONF_HISTORY_SIZE) {
+                    confidenceHistory[cls].shift();
+                }
+
+                if (predictions[n].score >= confidenceThreshold) {
+                    classCounts[cls] = (classCounts[cls] || 0) + 1;
+
+                    if (!activeClasses.has(cls)) continue;
                     const p = document.createElement('p');
+                    const color = getColorForClass(predictions[n].class);
+                    const avg = getAverageConfidence(cls);
+
                     p.innerText = predictions[n].class + ' - with ' +
                         Math.round(parseFloat(predictions[n].score) * 100) +
-                        '% confidence.';
+                        '% confidence.' + (avg ? ` (avg: ${Math.round(avg * 100)}%)` : '');
                     p.style = 'margin-left: ' + (predictions[n].bbox[0] * scaleX) + 'px; margin-top: ' +
                         (predictions[n].bbox[1] * scaleY - 10) + 'px; width: ' +
                         (predictions[n].bbox[2] * scaleX - 10) + 'px; top: 0; left: 0;';
+                    p.style.background = color;
                     const highlighter = document.createElement('div');
                     highlighter.setAttribute('class', 'highlighter');
 
@@ -266,6 +347,9 @@ function predictWebcam(timestamp) {
                 lastFrameTime = now;
                 fpsValue.textContent = fps;
             }
+
+            updateClassCountsUI();
+
 
         });
         // Call this function again to keep predicting when the browser is ready.
