@@ -26,6 +26,25 @@ imageInput.addEventListener('change', () => {
         // Run detection
         model.detect(imageCanvas).then(predictions => {
             console.log('Predictions:', predictions);
+
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+            }
+
+            liveView.classList.add('invisible');
+            document.getElementById('classFilters').classList.add('invisible');
+            document.getElementById('confidenceControl').classList.add('invisible');
+            screenshotBtn.disabled = true;
+
+            // Clear filters
+            filterList.innerHTML = '';
+            activeClasses.clear();
+            createdClasses.clear();
+
+            enableWebcamButton.disabled = false;
+            stopButton.disabled = true;
+
             
             predictions.forEach(pred => {
                 console.log(`Object: ${pred.class}, Score: ${pred.score}`);

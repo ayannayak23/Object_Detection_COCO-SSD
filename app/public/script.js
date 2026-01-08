@@ -9,6 +9,7 @@ const confidenceValue = document.getElementById('confidenceValue');
 const fpsValue = document.getElementById('fpsValue');
 const timeValue = document.getElementById('timeValue');
 const screenshotBtn = document.getElementById('screenshotBtn');
+const occupancyWarning = document.getElementById('occupancyWarning');
 
 let activeClasses = new Set();
 let createdClasses = new Set();
@@ -36,6 +37,16 @@ const colorPalette = [
     '#bcf60c', '#fabebe', '#008080', '#e6beff'
 ];
 let colorIndex = 0;
+
+// ROI (Region of Interest) configuration
+let roi = { x: 50, y: 50, width: 200, height: 200, active: false };
+
+const APPLICATION_CLASSES = new Set([
+    'person',
+    'cell phone',
+    'laptop',
+    'bottle'
+]);
 
 function getColorForClass(className) {
     if (!classColors[className]) {
@@ -77,6 +88,7 @@ function enableCam() {
         document.querySelector('.view-panel').classList.remove('invisible');
         document.getElementById('imageCanvas').classList.add('invisible');
         screenshotBtn.disabled = false;
+        document.getElementById('toggleROI').disabled = false;
         video.addEventListener('loadeddata', predictWebcam);
     })
     .catch(function(err) {
@@ -112,6 +124,7 @@ function stopWebcam() {
     document.getElementById('classFilters').classList.add('invisible');
     document.getElementById('confidenceControl').classList.add('invisible');
     screenshotBtn.disabled = true;
+    document.getElementById('toggleROI').disabled = true;
 
     // Clear filters
     filterList.innerHTML = '';
@@ -184,6 +197,9 @@ function updateClassFilters(predictions) {
     }
 
     predictions.forEach(pred => {
+        // Only create filters for classes in APPLICATION_CLASSES
+        if (!APPLICATION_CLASSES.has(pred.class)) return;
+        
         if (!createdClasses.has(pred.class)) {
             createdClasses.add(pred.class);
             activeClasses.add(pred.class);
@@ -250,6 +266,52 @@ function getAverageConfidence(cls) {
     return sum / history.length;
 }
 
+function checkOccupancy() {
+    const people = classCounts['person'] || 0;
+
+    if (people >= 4) {
+        occupancyWarning.textContent = '⚠ High occupancy detected';
+        occupancyWarning.classList.remove('invisible');
+    } else {
+        occupancyWarning.classList.add('invisible');
+    }
+}
+
+function isInsideROI(bbox, roi) {
+  if (!roi.active) return true;
+
+  const [x, y, w, h] = bbox;
+
+  const centerX = x + w / 2;
+  const centerY = y + h / 2;
+
+  return (
+    centerX >= roi.x &&
+    centerX <= roi.x + roi.width &&
+    centerY >= roi.y &&
+    centerY <= roi.y + roi.height
+  );
+}
+
+// Draw ROI rectangle on the live view (called from predictWebcam)
+function drawROI(canvas) {
+    if (!roi.active) return;
+
+    const ctx = canvas.getContext('2d');
+    ctx.strokeStyle = 'rgba(0, 255, 0, 0.8)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 5]);
+    ctx.strokeRect(roi.x, roi.y, roi.width, roi.height);
+    ctx.setLineDash([]);
+
+    // Draw corner handles
+    const handleSize = 8;
+    ctx.fillStyle = 'rgba(0, 255, 0, 0.8)';
+    ctx.fillRect(roi.x - handleSize / 2, roi.y - handleSize / 2, handleSize, handleSize);
+    ctx.fillRect(roi.x + roi.width - handleSize / 2, roi.y - handleSize / 2, handleSize, handleSize);
+    ctx.fillRect(roi.x - handleSize / 2, roi.y + roi.height - handleSize / 2, handleSize, handleSize);
+    ctx.fillRect(roi.x + roi.width - handleSize / 2, roi.y + roi.height - handleSize / 2, handleSize, handleSize);
+}
 
 
 var boundingBoxes = [];
@@ -277,6 +339,11 @@ function predictWebcam(timestamp) {
             updateClassFilters(predictions);
             const endTime = performance.now();
             timeValue.textContent = (endTime - startTime).toFixed(1);
+            const roiFilteredPredictions = predictions.filter(pred =>
+                isInsideROI(pred.bbox, roi)
+            );
+
+            predictions = roiFilteredPredictions;
             
             // Calculate scaling factor for responsive design
             const videoWidth = video.offsetWidth;
@@ -296,6 +363,8 @@ function predictWebcam(timestamp) {
                 // If we are over 66% sure we are sure we classified it right, draw it!
                 const cls = predictions[n].class;
                 const score = predictions[n].score;
+
+                if (!APPLICATION_CLASSES.has(cls)) continue;
 
                 if (!confidenceHistory[cls]) {
                     confidenceHistory[cls] = [];
@@ -338,6 +407,25 @@ function predictWebcam(timestamp) {
                 }
             }
 
+            // Draw ROI overlay
+            if (roi.active) {
+                let roiCanvas = document.getElementById('roiCanvas');
+                if (!roiCanvas) {
+                    roiCanvas = document.createElement('canvas');
+                    roiCanvas.id = 'roiCanvas';
+                    roiCanvas.width = videoWidth;
+                    roiCanvas.height = videoHeight;
+                    roiCanvas.style.position = 'absolute';
+                    roiCanvas.style.top = video.offsetTop + 'px';
+                    roiCanvas.style.left = video.offsetLeft + 'px';
+                    roiCanvas.style.cursor = 'move';
+                    liveView.appendChild(roiCanvas);
+                }
+                roiCanvas.width = videoWidth;
+                roiCanvas.height = videoHeight;
+                drawROI(roiCanvas);
+            }
+
             frameCount++;
             const now = performance.now();
 
@@ -349,6 +437,7 @@ function predictWebcam(timestamp) {
             }
 
             updateClassCountsUI();
+            checkOccupancy();
 
 
         });

@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>COCO-SSD Object Detection</title>
+    <title>Smart Indoor Safety with COCO-SSD</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://kit.fontawesome.com/cd1f0829a6.js" crossorigin="anonymous"></script>
 </head>
 <body>
-    <h1>Multiple Object Detection using COCO-SSD in TensorFlow.js</h1>
+    <h1>Smart Indoor Safety and Occupancy Monitoring using COCO-SSD in TensorFlow.js</h1>
     <p>Wait for the model to load before clicking the button to enable the webcam. The webcam will become visible once enabled.</p>
     
     <div id="loading">
@@ -30,13 +30,14 @@
                 
                 <div class="control-group">
                     <h3>Upload Image</h3>
-                    <p id="uploadInfo">Upload an image for detection:</p>
                     <div id="imageUpload">
                         <input type="file" id="imageInput" accept="image/*" class="file-input">
                     </div>
                 </div>
 
                 <button id="screenshotBtn" class="btn btn-secondary" disabled><i class="fa-regular fa-camera" style="color: #ffffff;"></i> Take Screenshot</button>
+                <button id="toggleROI" class="btn btn-secondary" disabled><i class="fa-solid fa-users-viewfinder" style="color: #ffffff;"></i> Toggle ROI</button>
+
             </div>
             
             <!-- Middle Panel: Camera/Image View -->
@@ -91,6 +92,9 @@
         </div>
     </section>
 
+    <p id="occupancyWarning" class="warning invisible"></p>
+
+
     <!-- Model Info at the bottom -->
     <div id="modelInfo" class="panel invisible">
         <h3>Model Information</h3>
@@ -108,6 +112,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
     <!-- Load our custom script after libraries are available -->
     <script src="script.js" defer></script>
+    <script src="roi.js" defer></script>
     <script src="drawImagePrdictions.js" defer></script>
     <script src="backendOptions.js" defer></script>
     <script src="screenshot.js" defer></script>
