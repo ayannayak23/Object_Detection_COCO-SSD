@@ -158,6 +158,10 @@ section {
     background: white;
 }
 
+#imageUpload label{
+    display: none;
+}
+
 .file-input:hover {
     border-color: #0066CC;
 }
@@ -400,6 +404,15 @@ section {
     }
     .control-group {
         margin-bottom: 0px;
+    }
+
+    #imageUpload label {
+        display: block;
+        margin-bottom: 15px;
+    }
+
+    .file-input {
+        width: 80%;
     }
 
     #screenshotBtn {
