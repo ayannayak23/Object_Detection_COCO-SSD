@@ -4,7 +4,7 @@ This project is a browser-based Web AI application developed using TensorFlow.js
 
 
 ## Live Demo
-https://ayannayak23.github.io/WebAI/
+https://ayannayak23.github.io/Object_Detection_COCO-SSD/
 
 ## Overview
 - Client-side JavaScript handles all detection logic
